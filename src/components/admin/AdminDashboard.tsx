@@ -42,7 +42,7 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
   const fetchStats = async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/admin-stats`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/dashboard`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -50,12 +50,20 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        console.error('Fetch stats HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
         setStats(data.stats);
+      } else {
+        console.error('Fetch stats error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch stats error:', error);
+      console.error('Fetch stats network error:', error);
     }
   };
 
@@ -70,12 +78,20 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        console.error('Fetch students HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setStudents(data.students);
+        setStudents(data.students || []);
+      } else {
+        console.error('Fetch students error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch students error:', error);
+      console.error('Fetch students network error:', error);
     }
   };
 
@@ -90,12 +106,20 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        console.error('Fetch attendance HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setAllAttendance(data.records);
+        setAllAttendance(data.records || []);
+      } else {
+        console.error('Fetch attendance error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch attendance error:', error);
+      console.error('Fetch attendance network error:', error);
     }
   };
 
@@ -110,12 +134,20 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        console.error('Fetch leaves HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setAllLeaves(data.leaves);
+        setAllLeaves(data.leaves || []);
+      } else {
+        console.error('Fetch leaves error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch leaves error:', error);
+      console.error('Fetch leaves network error:', error);
     }
   };
 
