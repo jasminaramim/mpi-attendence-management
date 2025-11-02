@@ -1,4 +1,4 @@
-import { Home, Calendar, FileText, Users, Bell, MessageSquare, GraduationCap, User, LogOut, LayoutDashboard, ClipboardList } from 'lucide-react';
+import { Home, Calendar, FileText, Users, Bell, MessageSquare, GraduationCap, User, LogOut, LayoutDashboard, ClipboardList, UserCheck } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Separator } from '../ui/separator';
@@ -18,7 +18,7 @@ export function Sidebar({ user, activeTab, onTabChange, onLogout, role }: Sideba
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'leaves', label: 'Leave Management', icon: FileText },
     { id: 'noticeboard', label: 'Notice Board', icon: Bell },
-    { id: 'complaints', label: 'Complaints', icon: MessageSquare },
+    { id: 'complaints', label: 'My Complaints', icon: MessageSquare },
     { id: 'teachers', label: 'My Teachers', icon: GraduationCap },
     { id: 'profile', label: 'My Profile', icon: User },
   ];
@@ -27,10 +27,12 @@ export function Sidebar({ user, activeTab, onTabChange, onLogout, role }: Sideba
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'attendance', label: 'Manage Attendance', icon: ClipboardList },
     { id: 'students', label: 'Manage Students', icon: Users },
+    { id: 'assignments', label: 'Assign Teacher/Manager', icon: UserCheck },
     { id: 'leaves', label: 'Leave Requests', icon: FileText },
     { id: 'noticeboard', label: 'Manage Notices', icon: Bell },
     { id: 'complaints', label: 'Complaints', icon: MessageSquare },
     { id: 'teachers', label: 'Manage Teachers', icon: GraduationCap },
+    { id: 'managers', label: 'Manage Managers', icon: UserCheck },
     { id: 'profile', label: 'My Profile', icon: User },
   ];
 

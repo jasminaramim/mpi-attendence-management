@@ -42,11 +42,18 @@ export function DashboardTab({ user, accessToken, attendanceHistory, leaveBalanc
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to check in (${response.status})`);
+        return;
+      }
+
       const data = await response.json();
       closeLoading();
 
       if (data.success) {
-        showSuccess(`Checked in at ${data.attendance.checkIn}`, 'Check-in Successful!');
+        showSuccess(`Checked in at ${data.record?.checkIn || data.attendance?.checkIn}`, 'Check-in Successful!');
         onRefresh();
       } else {
         showError(data.error || 'Failed to check in');
@@ -54,7 +61,7 @@ export function DashboardTab({ user, accessToken, attendanceHistory, leaveBalanc
     } catch (error) {
       closeLoading();
       console.error('Check-in error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };
@@ -75,11 +82,18 @@ export function DashboardTab({ user, accessToken, attendanceHistory, leaveBalanc
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to check out (${response.status})`);
+        return;
+      }
+
       const data = await response.json();
       closeLoading();
 
       if (data.success) {
-        showSuccess(`Checked out at ${data.attendance.checkOut}. Total duration: ${data.attendance.duration}`, 'Check-out Successful!');
+        showSuccess(`Checked out at ${data.record?.checkOut || data.attendance?.checkOut}. Total duration: ${data.record?.duration || data.attendance?.duration}`, 'Check-out Successful!');
         onRefresh();
       } else {
         showError(data.error || 'Failed to check out');
@@ -87,7 +101,7 @@ export function DashboardTab({ user, accessToken, attendanceHistory, leaveBalanc
     } catch (error) {
       closeLoading();
       console.error('Check-out error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };

@@ -36,6 +36,14 @@ export function StudentDashboard({ user, accessToken, onLogout, onUpdateUser }: 
     fetchNotices();
     fetchComplaints();
     fetchTeachers();
+
+    // Real-time updates: Poll every 30 seconds
+    const interval = setInterval(() => {
+      fetchAttendance();
+      fetchNotices();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchAttendance = async () => {
@@ -49,12 +57,20 @@ export function StudentDashboard({ user, accessToken, onLogout, onUpdateUser }: 
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        console.error('Fetch attendance HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setAttendanceHistory(data.records);
+        setAttendanceHistory(data.records || []);
+      } else {
+        console.error('Fetch attendance error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch attendance error:', error);
+      console.error('Fetch attendance network error:', error);
     }
   };
 
@@ -69,12 +85,20 @@ export function StudentDashboard({ user, accessToken, onLogout, onUpdateUser }: 
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        console.error('Fetch leaves HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setLeaves(data.leaves);
+        setLeaves(data.leaves || []);
+      } else {
+        console.error('Fetch leaves error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch leaves error:', error);
+      console.error('Fetch leaves network error:', error);
     }
   };
 
@@ -89,12 +113,20 @@ export function StudentDashboard({ user, accessToken, onLogout, onUpdateUser }: 
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        console.error('Fetch leave balance HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
         setLeaveBalance(data.balance);
+      } else {
+        console.error('Fetch leave balance error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch leave balance error:', error);
+      console.error('Fetch leave balance network error:', error);
     }
   };
 
@@ -109,12 +141,20 @@ export function StudentDashboard({ user, accessToken, onLogout, onUpdateUser }: 
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        console.error('Fetch manager HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
         setManager(data.manager);
+      } else {
+        console.error('Fetch manager error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch manager error:', error);
+      console.error('Fetch manager network error:', error);
     }
   };
 
@@ -129,12 +169,20 @@ export function StudentDashboard({ user, accessToken, onLogout, onUpdateUser }: 
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        console.error('Fetch notices HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setNotices(data.notices);
+        setNotices(data.notices || []);
+      } else {
+        console.error('Fetch notices error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch notices error:', error);
+      console.error('Fetch notices network error:', error);
     }
   };
 
@@ -149,12 +197,20 @@ export function StudentDashboard({ user, accessToken, onLogout, onUpdateUser }: 
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        console.error('Fetch complaints HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setComplaints(data.complaints);
+        setComplaints(data.complaints || []);
+      } else {
+        console.error('Fetch complaints error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch complaints error:', error);
+      console.error('Fetch complaints network error:', error);
     }
   };
 
@@ -169,12 +225,20 @@ export function StudentDashboard({ user, accessToken, onLogout, onUpdateUser }: 
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        console.error('Fetch teachers HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setTeachers(data.teachers);
+        setTeachers(data.teachers || []);
+      } else {
+        console.error('Fetch teachers error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch teachers error:', error);
+      console.error('Fetch teachers network error:', error);
     }
   };
 

@@ -32,7 +32,7 @@ export function ManageTeachersTab({ teachers, accessToken, onRefresh }: ManageTe
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/admin-add-teacher`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/add-teacher`,
         {
           method: 'POST',
           headers: {
@@ -42,6 +42,13 @@ export function ManageTeachersTab({ teachers, accessToken, onRefresh }: ManageTe
           body: JSON.stringify({ name, subject, phone, email, semester }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to add teacher (${response.status})`);
+        return;
+      }
 
       const data = await response.json();
       closeLoading();
@@ -56,7 +63,7 @@ export function ManageTeachersTab({ teachers, accessToken, onRefresh }: ManageTe
     } catch (error) {
       closeLoading();
       console.error('Add teacher error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };
@@ -69,9 +76,9 @@ export function ManageTeachersTab({ teachers, accessToken, onRefresh }: ManageTe
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/admin-delete-teacher`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/delete-teacher`,
         {
-          method: 'POST',
+          method: 'DELETE',
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
@@ -79,6 +86,13 @@ export function ManageTeachersTab({ teachers, accessToken, onRefresh }: ManageTe
           body: JSON.stringify({ teacherId }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to delete teacher (${response.status})`);
+        return;
+      }
 
       const data = await response.json();
       closeLoading();
@@ -92,7 +106,7 @@ export function ManageTeachersTab({ teachers, accessToken, onRefresh }: ManageTe
     } catch (error) {
       closeLoading();
       console.error('Delete teacher error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
   };
 

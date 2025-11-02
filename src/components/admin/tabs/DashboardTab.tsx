@@ -52,6 +52,15 @@ export function DashboardTab({ stats, students, accessToken, onRefresh }: Dashbo
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to search student (${response.status})`);
+        setSelectedStudent(null);
+        setStudentData(null);
+        return;
+      }
+
       const data = await response.json();
       closeLoading();
 
@@ -66,7 +75,7 @@ export function DashboardTab({ stats, students, accessToken, onRefresh }: Dashbo
     } catch (error) {
       closeLoading();
       console.error('Search student error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };
@@ -100,6 +109,13 @@ export function DashboardTab({ stats, students, accessToken, onRefresh }: Dashbo
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to update attendance (${response.status})`);
+        return;
+      }
+
       const data = await response.json();
       closeLoading();
 
@@ -113,7 +129,7 @@ export function DashboardTab({ stats, students, accessToken, onRefresh }: Dashbo
     } catch (error) {
       closeLoading();
       console.error('Update attendance error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };

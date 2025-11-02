@@ -50,14 +50,21 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           }
         );
 
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+          closeLoading();
+          showError(errorData.error || 'Failed to fetch user data');
+          return;
+        }
+
         const userData = await response.json();
         closeLoading();
         
         if (userData.success) {
           showSuccess('Login successful!');
-          onLogin(userData.user, data.session.access_token);
+          onLogin(userData.user, data.session.access_token, data.session.refresh_token);
         } else {
-          showError('Failed to fetch user data');
+          showError(userData.error || 'Failed to fetch user data');
         }
       }
     } catch (error) {
@@ -78,8 +85,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     const password = formData.get('password') as string;
     const name = formData.get('name') as string;
     const studentId = formData.get('studentId') as string;
-    const role = formData.get('role') as string;
     const semester = formData.get('semester') as string;
+    const role = 'student'; // Default role, admin can be set from Supabase
 
     try {
       const response = await fetch(
@@ -290,19 +297,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     placeholder="Semester 1"
                     required
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-role">Role</Label>
-                  <select
-                    id="signup-role"
-                    name="role"
-                    className="w-full h-10 px-3 rounded-md border border-gray-300"
-                    required
-                  >
-                    <option value="student">Student</option>
-                    <option value="admin">Admin</option>
-                  </select>
                 </div>
 
                 <Button type="submit" className="w-full bg-[#F4A247] hover:bg-[#F4A247]/90" disabled={loading}>

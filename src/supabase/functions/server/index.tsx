@@ -358,6 +358,10 @@ app.get('/make-server-0614540f/leave-balance', async (c) => {
 app.get('/make-server-0614540f/my-manager', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    if (!accessToken) {
+      return c.json({ error: 'Authorization token required' }, 401);
+    }
+
     const { data: { user }, error } = await supabase.auth.getUser(accessToken);
     
     if (!user || error) {
@@ -365,7 +369,25 @@ app.get('/make-server-0614540f/my-manager', async (c) => {
     }
 
     const userData = await kv.get(`user:${user.id}`);
-    const manager = await kv.get(`manager:${userData.studentId}`);
+    if (!userData || !userData.studentId) {
+      return c.json({ error: 'Student data not found' }, 404);
+    }
+    
+    // Get assigned manager
+    const managerAssignment = await kv.get(`manager:${userData.studentId}`);
+    
+    if (managerAssignment && managerAssignment.managerId) {
+      // Get manager details from manager list
+      const manager = await kv.get(managerAssignment.managerId);
+      if (manager && manager.name) {
+        return c.json({ success: true, manager: { adminName: manager.name } });
+      }
+    }
+
+    // Fallback: Return default if no manager assigned
+    const manager = {
+      adminName: 'Administrator',
+    };
 
     return c.json({ success: true, manager });
   } catch (err) {
@@ -1080,12 +1102,24 @@ app.get('/make-server-0614540f/my-teachers', async (c) => {
     }
 
     const userData = await kv.get(`user:${user.id}`);
-    const allTeachers = await kv.getByPrefix('teacher:');
     
-    // Filter teachers for this student's semester
-    const filtered = allTeachers.filter((teacher: any) => teacher.semester === userData.semester);
+    // Check if student has assigned teacher
+    const assignment = await kv.get(`student-teacher:${userData.studentId}`);
+    
+    let teachers = [];
+    if (assignment && assignment.teacherId) {
+      // Get assigned teacher
+      const assignedTeacher = await kv.get(assignment.teacherId);
+      if (assignedTeacher) {
+        teachers = [assignedTeacher];
+      }
+    } else {
+      // Fallback: Filter teachers for this student's semester
+      const allTeachers = await kv.getByPrefix('teacher:');
+      teachers = allTeachers.filter((teacher: any) => teacher.semester === userData.semester);
+    }
 
-    return c.json({ success: true, teachers: filtered });
+    return c.json({ success: true, teachers });
   } catch (err) {
     console.log(`Get my teachers error: ${err}`);
     return c.json({ error: 'Server error fetching teachers' }, 500);
@@ -1361,6 +1395,324 @@ app.post('/make-server-0614540f/upload-profile-image', async (c) => {
   } catch (err) {
     console.log(`Upload profile image error: ${err}`);
     return c.json({ error: 'Server error uploading image' }, 500);
+  }
+});
+
+// ============ ASSIGNMENT ROUTES ============
+
+// Get all users (for admin to see all users including admins)
+app.get('/make-server-0614540f/all-users', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (!user || error) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userData = await kv.get(`user:${user.id}`);
+    if (userData.role !== 'admin') {
+      return c.json({ error: 'Admin access required' }, 403);
+    }
+
+    const allUsers = await kv.getByPrefix('user:');
+    return c.json({ success: true, users: allUsers });
+  } catch (err) {
+    console.log(`Get all users error: ${err}`);
+    return c.json({ error: 'Server error fetching users' }, 500);
+  }
+});
+
+// Assign teacher to student
+app.post('/make-server-0614540f/assign-teacher', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (!user || error) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userData = await kv.get(`user:${user.id}`);
+    if (userData.role !== 'admin') {
+      return c.json({ error: 'Admin access required' }, 403);
+    }
+
+    const body = await c.req.json();
+    const { studentId, teacherId } = body;
+
+    if (!studentId || !teacherId) {
+      return c.json({ error: 'Student ID and Teacher ID are required' }, 400);
+    }
+
+    // Verify student exists
+    const allUsers = await kv.getByPrefix('user:');
+    const student = allUsers.find((u: any) => u.studentId === studentId && u.role === 'student');
+    
+    if (!student) {
+      return c.json({ error: 'Student not found' }, 404);
+    }
+
+    // Verify teacher exists
+    const teacher = await kv.get(teacherId);
+    if (!teacher) {
+      return c.json({ error: 'Teacher not found' }, 404);
+    }
+
+    // Store assignment
+    await kv.set(`student-teacher:${studentId}`, {
+      studentId,
+      teacherId,
+      teacherName: teacher.name,
+      assignedAt: getCurrentDateTime().date,
+    });
+
+    return c.json({ success: true, message: 'Teacher assigned successfully' });
+  } catch (err) {
+    console.log(`Assign teacher error: ${err}`);
+    return c.json({ error: 'Server error assigning teacher' }, 500);
+  }
+});
+
+// Assign manager to student
+app.post('/make-server-0614540f/assign-manager', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    if (!accessToken) {
+      return c.json({ error: 'Authorization token required' }, 401);
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (!user || error) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userData = await kv.get(`user:${user.id}`);
+    if (!userData) {
+      return c.json({ error: 'User data not found' }, 404);
+    }
+
+    if (userData.role !== 'admin') {
+      return c.json({ error: 'Admin access required' }, 403);
+    }
+
+    const body = await c.req.json();
+    const { studentId, managerId } = body;
+
+    if (!studentId || !managerId) {
+      return c.json({ error: 'Student ID and Manager ID are required' }, 400);
+    }
+
+    // Verify student exists
+    const allUsers = await kv.getByPrefix('user:');
+    const usersArray = Array.isArray(allUsers) ? allUsers : (allUsers ? Object.values(allUsers) : []);
+    const student = usersArray.find((u: any) => u.studentId === studentId && u.role === 'student');
+    
+    if (!student) {
+      return c.json({ error: 'Student not found' }, 404);
+    }
+
+    // Verify manager exists from manager list
+    const manager = await kv.get(managerId);
+    if (!manager) {
+      return c.json({ error: 'Manager not found' }, 404);
+    }
+
+    // Update manager assignment
+    await kv.set(`manager:${studentId}`, {
+      adminName: manager.name,
+      managerId: managerId,
+      assignedAt: getCurrentDateTime().date,
+    });
+
+    return c.json({ success: true, message: 'Manager assigned successfully' });
+  } catch (err) {
+    console.log(`Assign manager error: ${err}`);
+    return c.json({ error: 'Server error assigning manager' }, 500);
+  }
+});
+
+// Get student's assigned teacher
+app.get('/make-server-0614540f/get-student-teacher', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (!user || error) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const studentId = c.req.query('studentId');
+    if (!studentId) {
+      return c.json({ error: 'Student ID is required' }, 400);
+    }
+
+    const assignment = await kv.get(`student-teacher:${studentId}`);
+    
+    return c.json({ success: true, teacherId: assignment?.teacherId || null, teacher: assignment });
+  } catch (err) {
+    console.log(`Get student teacher error: ${err}`);
+    return c.json({ error: 'Server error fetching student teacher' }, 500);
+  }
+});
+
+// Get student's assigned manager
+app.get('/make-server-0614540f/get-student-manager', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    if (!accessToken) {
+      return c.json({ error: 'Authorization token required' }, 401);
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (!user || error) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const studentId = c.req.query('studentId');
+    if (!studentId) {
+      return c.json({ error: 'Student ID is required' }, 400);
+    }
+
+    const manager = await kv.get(`manager:${studentId}`);
+    
+    return c.json({ 
+      success: true, 
+      managerId: manager?.managerId || null, 
+      manager: manager || null 
+    });
+  } catch (err) {
+    console.log(`Get student manager error: ${err}`);
+    return c.json({ error: 'Server error fetching student manager' }, 500);
+  }
+});
+
+// ============ MANAGER CRUD ROUTES ============
+
+// Add manager
+app.post('/make-server-0614540f/add-manager', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    if (!accessToken) {
+      return c.json({ error: 'Authorization token required' }, 401);
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (!user || error) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userData = await kv.get(`user:${user.id}`);
+    if (!userData) {
+      return c.json({ error: 'User data not found' }, 404);
+    }
+
+    if (userData.role !== 'admin') {
+      return c.json({ error: 'Admin access required' }, 403);
+    }
+
+    const body = await c.req.json();
+    const { name, designation, phone, email } = body;
+
+    if (!name || !designation || !phone || !email) {
+      return c.json({ error: 'All fields are required' }, 400);
+    }
+
+    const managerId = `manager-record:${Date.now()}`;
+    const manager = {
+      id: managerId,
+      name,
+      designation,
+      phone,
+      email,
+    };
+
+    await kv.set(managerId, manager);
+    return c.json({ success: true, manager });
+  } catch (err) {
+    console.log(`Add manager error: ${err}`);
+    return c.json({ error: 'Server error adding manager' }, 500);
+  }
+});
+
+// Get all managers
+app.get('/make-server-0614540f/all-managers', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    if (!accessToken) {
+      return c.json({ error: 'Authorization token required' }, 401);
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (!user || error) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userData = await kv.get(`user:${user.id}`);
+    if (!userData) {
+      return c.json({ error: 'User data not found' }, 404);
+    }
+
+    if (userData.role !== 'admin') {
+      return c.json({ error: 'Admin access required' }, 403);
+    }
+
+    const allManagers = await kv.getByPrefix('manager-record:');
+    // Handle case where getByPrefix returns array or object
+    const managers = Array.isArray(allManagers) ? allManagers : (allManagers ? Object.values(allManagers) : []);
+
+    return c.json({ success: true, managers });
+  } catch (err) {
+    console.log(`Get managers error: ${err}`);
+    return c.json({ error: 'Server error fetching managers' }, 500);
+  }
+});
+
+// Delete manager
+app.delete('/make-server-0614540f/delete-manager', async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    if (!accessToken) {
+      return c.json({ error: 'Authorization token required' }, 401);
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (!user || error) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userData = await kv.get(`user:${user.id}`);
+    if (!userData) {
+      return c.json({ error: 'User data not found' }, 404);
+    }
+
+    if (userData.role !== 'admin') {
+      return c.json({ error: 'Admin access required' }, 403);
+    }
+
+    const body = await c.req.json();
+    const { managerId } = body;
+
+    if (!managerId) {
+      return c.json({ error: 'Manager ID is required' }, 400);
+    }
+
+    // Verify manager exists before deleting
+    const manager = await kv.get(managerId);
+    if (!manager) {
+      return c.json({ error: 'Manager not found' }, 404);
+    }
+
+    await kv.delete(managerId);
+    return c.json({ success: true, message: 'Manager deleted successfully' });
+  } catch (err) {
+    console.log(`Delete manager error: ${err}`);
+    return c.json({ error: 'Server error deleting manager' }, 500);
   }
 });
 

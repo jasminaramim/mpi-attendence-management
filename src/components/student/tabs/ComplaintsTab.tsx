@@ -42,6 +42,13 @@ export function ComplaintsTab({ complaints, accessToken, onRefresh }: Complaints
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to submit complaint (${response.status})`);
+        return;
+      }
+
       const data = await response.json();
       closeLoading();
 
@@ -55,7 +62,7 @@ export function ComplaintsTab({ complaints, accessToken, onRefresh }: Complaints
     } catch (error) {
       closeLoading();
       console.error('Submit error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };

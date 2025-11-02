@@ -3,10 +3,12 @@ import { Sidebar } from '../layout/Sidebar';
 import { DashboardTab } from './tabs/DashboardTab';
 import { ManageAttendanceTab } from './tabs/ManageAttendanceTab';
 import { ManageStudentsTab } from './tabs/ManageStudentsTab';
+import { AssignTeacherManagerTab } from './tabs/AssignTeacherManagerTab';
 import { ManageLeavesTab } from './tabs/ManageLeavesTab';
 import { ManageNoticesTab } from './tabs/ManageNoticesTab';
 import { ManageComplaintsTab } from './tabs/ManageComplaintsTab';
 import { ManageTeachersTab } from './tabs/ManageTeachersTab';
+import { ManageManagersTab } from './tabs/ManageManagersTab';
 import { ProfileTab } from '../shared/ProfileTab';
 import { projectId } from '../../utils/supabase/info';
 import { Toaster } from '../ui/sonner';
@@ -28,6 +30,7 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
   const [notices, setNotices] = useState<any[]>([]);
   const [complaints, setComplaints] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
+  const [managers, setManagers] = useState<any[]>([]);
 
   useEffect(() => {
     fetchStats();
@@ -37,6 +40,17 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
     fetchNotices();
     fetchComplaints();
     fetchTeachers();
+    fetchManagers();
+
+    // Real-time updates: Poll every 30 seconds
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchStudents();
+      fetchAllAttendance();
+      fetchNotices();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchStats = async () => {
@@ -235,6 +249,34 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
     }
   };
 
+  const fetchManagers = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/all-managers`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        console.error('Fetch managers HTTP error:', errorData);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setManagers(data.managers || []);
+      } else {
+        console.error('Fetch managers error:', data.error);
+      }
+    } catch (error) {
+      console.error('Fetch managers network error:', error);
+    }
+  };
+
   const handleLogout = async () => {
     const confirmed = await showConfirm('Are you sure you want to logout?', 'Logout');
     if (confirmed) {
@@ -274,6 +316,20 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
             onRefresh={fetchStudents}
           />
         );
+      case 'assignments':
+        return (
+          <AssignTeacherManagerTab
+            students={students}
+            teachers={teachers}
+            managers={managers}
+            accessToken={accessToken}
+            onRefresh={() => {
+              fetchStudents();
+              fetchTeachers();
+              fetchManagers();
+            }}
+          />
+        );
       case 'leaves':
         return (
           <ManageLeavesTab
@@ -304,6 +360,14 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
             teachers={teachers}
             accessToken={accessToken}
             onRefresh={fetchTeachers}
+          />
+        );
+      case 'managers':
+        return (
+          <ManageManagersTab
+            managers={managers}
+            accessToken={accessToken}
+            onRefresh={fetchManagers}
           />
         );
       case 'profile':

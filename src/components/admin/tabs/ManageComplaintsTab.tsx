@@ -30,7 +30,7 @@ export function ManageComplaintsTab({ complaints, accessToken, onRefresh }: Mana
 
     try {
       const apiResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/admin-respond-complaint`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/update-complaint-status`,
         {
           method: 'POST',
           headers: {
@@ -40,6 +40,13 @@ export function ManageComplaintsTab({ complaints, accessToken, onRefresh }: Mana
           body: JSON.stringify({ complaintId: selectedComplaint.id, response, status }),
         }
       );
+
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json().catch(() => ({ error: `HTTP ${apiResponse.status}: ${apiResponse.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to send response (${apiResponse.status})`);
+        return;
+      }
 
       const data = await apiResponse.json();
       closeLoading();
@@ -54,7 +61,7 @@ export function ManageComplaintsTab({ complaints, accessToken, onRefresh }: Mana
     } catch (error) {
       closeLoading();
       console.error('Respond error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };

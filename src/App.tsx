@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { LoginPage } from './components/auth/LoginPage';
 import { StudentDashboard } from './components/student/StudentDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { tokenManager } from './utils/tokenManager';
+import { apiClient } from './utils/apiClient';
 
 interface User {
   id: string;
@@ -19,27 +21,44 @@ export default function App() {
 
   useEffect(() => {
     // Check for existing session
-    const storedToken = localStorage.getItem('accessToken');
-    const storedUser = localStorage.getItem('user');
+    const initAuth = async () => {
+      try {
+        const token = await tokenManager.getValidToken();
+        const storedUser = localStorage.getItem('user');
+        
+        if (token && storedUser) {
+          setAccessToken(token);
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error('Auth init error:', error);
+        tokenManager.clearTokens();
+      }
+      setLoading(false);
+    };
     
-    if (storedToken && storedUser) {
-      setAccessToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    initAuth();
   }, []);
 
-  const handleLogin = (userData: any, token: string) => {
+  const handleLogin = (userData: any, token: string, refreshToken?: string) => {
     setAccessToken(token);
     setUser(userData);
-    localStorage.setItem('accessToken', token);
+    
+    // Save tokens with refresh token if provided
+    if (refreshToken) {
+      tokenManager.saveTokens(token, refreshToken);
+    } else {
+      // Fallback: save access token and generate a placeholder refresh token
+      tokenManager.saveTokens(token, token, 3600);
+    }
+    
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     setAccessToken(null);
     setUser(null);
-    localStorage.removeItem('accessToken');
+    tokenManager.clearTokens();
     localStorage.removeItem('user');
   };
 

@@ -42,9 +42,16 @@ export function LeaveManagementTab({ leaves, leaveBalance, accessToken, onRefres
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ type, startDate, endDate, reason }),
+          body: JSON.stringify({ type, fromDate: startDate, toDate: endDate, reason }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to apply leave (${response.status})`);
+        return;
+      }
 
       const data = await response.json();
       closeLoading();
@@ -59,7 +66,7 @@ export function LeaveManagementTab({ leaves, leaveBalance, accessToken, onRefres
     } catch (error) {
       closeLoading();
       console.error('Apply leave error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };

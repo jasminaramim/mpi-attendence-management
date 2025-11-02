@@ -1,9 +1,10 @@
 {
-  "builds": [
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/next"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ],
-  "outputDirectory": ".next"
+  ]
 }

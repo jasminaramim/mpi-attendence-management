@@ -3,50 +3,49 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
-import { Textarea } from '../../ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
-import { Badge } from '../../ui/badge';
-import { Bell, Plus, Trash2 } from 'lucide-react';
+import { UserCheck, Plus, Trash2 } from 'lucide-react';
 import { projectId } from '../../../utils/supabase/info';
 import { showSuccess, showError, showLoading, closeLoading, showConfirm } from '../../../utils/alerts';
 
-interface ManageNoticesTabProps {
-  notices: any[];
+interface ManageManagersTabProps {
+  managers: any[];
   accessToken: string;
   onRefresh: () => void;
 }
 
-export function ManageNoticesTab({ notices, accessToken, onRefresh }: ManageNoticesTabProps) {
+export function ManageManagersTab({ managers, accessToken, onRefresh }: ManageManagersTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handlePostNotice = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddManager = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    showLoading('Posting notice...');
+    showLoading('Adding manager...');
 
     const formData = new FormData(e.currentTarget);
-    const title = formData.get('title') as string;
-    const content = formData.get('content') as string;
-    const targetAudience = formData.get('targetAudience') as string;
+    const name = formData.get('name') as string;
+    const designation = formData.get('designation') as string;
+    const phone = formData.get('phone') as string;
+    const email = formData.get('email') as string;
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/create-notice`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/add-manager`,
         {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title, content, targetAudience: targetAudience === 'All' ? 'All Students' : targetAudience }),
+          body: JSON.stringify({ name, designation, phone, email }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
         closeLoading();
-        showError(errorData.error || `Failed to post notice (${response.status})`);
+        showError(errorData.error || `Failed to add manager (${response.status})`);
         return;
       }
 
@@ -54,43 +53,46 @@ export function ManageNoticesTab({ notices, accessToken, onRefresh }: ManageNoti
       closeLoading();
 
       if (data.success) {
-        showSuccess('Notice posted successfully!');
+        showSuccess('Manager added successfully!');
         setDialogOpen(false);
+        // Reset form
+        const form = e.currentTarget;
+        form.reset();
         onRefresh();
       } else {
-        showError(data.error || 'Failed to post notice');
+        showError(data.error || 'Failed to add manager');
       }
     } catch (error) {
       closeLoading();
-      console.error('Post notice error:', error);
+      console.error('Add manager error:', error);
       showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };
 
-  const handleDeleteNotice = async (noticeId: string) => {
-    const confirmed = await showConfirm('This will permanently delete this notice.', 'Delete Notice?');
+  const handleDeleteManager = async (managerId: string) => {
+    const confirmed = await showConfirm('This will permanently delete this manager.', 'Delete Manager?');
     if (!confirmed) return;
 
-    showLoading('Deleting notice...');
+    showLoading('Deleting manager...');
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/delete-notice`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/delete-manager`,
         {
           method: 'DELETE',
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ noticeId }),
+          body: JSON.stringify({ managerId }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
         closeLoading();
-        showError(errorData.error || `Failed to delete notice (${response.status})`);
+        showError(errorData.error || `Failed to delete manager (${response.status})`);
         return;
       }
 
@@ -98,14 +100,14 @@ export function ManageNoticesTab({ notices, accessToken, onRefresh }: ManageNoti
       closeLoading();
 
       if (data.success) {
-        showSuccess('Notice deleted successfully!');
+        showSuccess('Manager deleted successfully!');
         onRefresh();
       } else {
-        showError(data.error || 'Failed to delete notice');
+        showError(data.error || 'Failed to delete manager');
       }
     } catch (error) {
       closeLoading();
-      console.error('Delete notice error:', error);
+      console.error('Delete manager error:', error);
       showError('Network error. Please check your connection and try again.');
     }
   };
@@ -114,72 +116,71 @@ export function ManageNoticesTab({ notices, accessToken, onRefresh }: ManageNoti
     <Card className="shadow-lg">
       <CardHeader className="bg-gradient-to-r from-[#27BEEF] to-[#F4A247] text-white flex flex-row items-center justify-between">
         <div className="flex items-center gap-3">
-          <Bell className="w-6 h-6" />
-          <CardTitle>Manage Notices</CardTitle>
+          <UserCheck className="w-6 h-6" />
+          <CardTitle>Manage Managers</CardTitle>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="secondary" size="sm">
               <Plus className="w-4 h-4 mr-2" />
-              Post Notice
+              Add Manager
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Post New Notice</DialogTitle>
+              <DialogTitle>Add New Manager</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handlePostNotice} className="space-y-4">
+            <form onSubmit={handleAddManager} className="space-y-4">
               <div className="space-y-2">
-                <Label>Title</Label>
-                <Input name="title" placeholder="Notice title" required />
+                <Label>Name</Label>
+                <Input name="name" placeholder="Manager name" required />
               </div>
               <div className="space-y-2">
-                <Label>Content</Label>
-                <Textarea name="content" rows={5} required />
+                <Label>Designation</Label>
+                <Input name="designation" placeholder="Designation/Role" required />
               </div>
               <div className="space-y-2">
-                <Label>Target Audience</Label>
-                <select name="targetAudience" className="w-full h-10 px-3 rounded-md border" required>
-                  <option value="All">All</option>
-                  <option value="Students">Students Only</option>
-                  <option value="Admins">Admins Only</option>
-                </select>
+                <Label>Phone</Label>
+                <Input name="phone" placeholder="Phone number" required />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input name="email" type="email" placeholder="Email address" required />
               </div>
               <Button type="submit" className="w-full bg-[#27BEEF]" disabled={loading}>
-                {loading ? 'Posting...' : 'Post Notice'}
+                {loading ? 'Adding...' : 'Add Manager'}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </CardHeader>
       <CardContent className="pt-6">
-        <div className="space-y-4">
-          {notices.map((notice, index) => (
+        <div className="grid md:grid-cols-2 gap-4">
+          {managers.map((manager, index) => (
             <div key={index} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="text-lg">{notice.title}</h3>
-                  <p className="text-xs text-gray-500">Posted by {notice.postedBy} on {notice.postedOn}</p>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-lg">{manager.name}</p>
+                  <p className="text-sm text-gray-600">{manager.designation}</p>
+                  <p className="text-xs text-gray-500 mt-2">Phone: {manager.phone}</p>
+                  <p className="text-xs text-gray-500">Email: {manager.email}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge>{notice.targetAudience}</Badge>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeleteNotice(notice.id)}
-                  >
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDeleteManager(manager.id)}
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </Button>
               </div>
-              <p className="text-sm text-gray-700">{notice.content}</p>
             </div>
           ))}
-          {notices.length === 0 && (
-            <p className="text-center text-gray-500 py-8">No notices posted yet</p>
+          {managers.length === 0 && (
+            <p className="text-center text-gray-500 py-8 col-span-2">No managers added yet</p>
           )}
         </div>
       </CardContent>
     </Card>
   );
 }
+

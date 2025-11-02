@@ -119,7 +119,7 @@ export function ManageLeavesTab({ leaves, accessToken, onRefresh }: ManageLeaves
                     <strong>{leave.studentName}</strong> ({leave.studentId})
                   </p>
                   <p className="text-xs text-gray-500">
-                    {leave.type} - {leave.startDate} to {leave.endDate}
+                    {leave.type} - {leave.fromDate || leave.startDate} to {leave.toDate || leave.endDate}
                   </p>
                   <p className="text-xs text-gray-600 mt-1">{leave.reason}</p>
                 </div>
