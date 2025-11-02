@@ -358,10 +358,6 @@ app.get('/make-server-0614540f/leave-balance', async (c) => {
 app.get('/make-server-0614540f/my-manager', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    if (!accessToken) {
-      return c.json({ error: 'Authorization token required' }, 401);
-    }
-
     const { data: { user }, error } = await supabase.auth.getUser(accessToken);
     
     if (!user || error) {
@@ -369,9 +365,6 @@ app.get('/make-server-0614540f/my-manager', async (c) => {
     }
 
     const userData = await kv.get(`user:${user.id}`);
-    if (!userData || !userData.studentId) {
-      return c.json({ error: 'Student data not found' }, 404);
-    }
     
     // Get assigned manager
     const managerAssignment = await kv.get(`manager:${userData.studentId}`);
@@ -1478,10 +1471,6 @@ app.post('/make-server-0614540f/assign-teacher', async (c) => {
 app.post('/make-server-0614540f/assign-manager', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    if (!accessToken) {
-      return c.json({ error: 'Authorization token required' }, 401);
-    }
-
     const { data: { user }, error } = await supabase.auth.getUser(accessToken);
     
     if (!user || error) {
@@ -1489,20 +1478,12 @@ app.post('/make-server-0614540f/assign-manager', async (c) => {
     }
 
     const userData = await kv.get(`user:${user.id}`);
-    if (!userData) {
-      return c.json({ error: 'User data not found' }, 404);
-    }
-
     if (userData.role !== 'admin') {
       return c.json({ error: 'Admin access required' }, 403);
     }
 
     const body = await c.req.json();
     const { studentId, managerId } = body;
-
-    if (!studentId || !managerId) {
-      return c.json({ error: 'Student ID and Manager ID are required' }, 400);
-    }
 
     // Verify student exists
     const allUsers = await kv.getByPrefix('user:');
@@ -1561,10 +1542,6 @@ app.get('/make-server-0614540f/get-student-teacher', async (c) => {
 app.get('/make-server-0614540f/get-student-manager', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    if (!accessToken) {
-      return c.json({ error: 'Authorization token required' }, 401);
-    }
-
     const { data: { user }, error } = await supabase.auth.getUser(accessToken);
     
     if (!user || error) {
@@ -1572,10 +1549,6 @@ app.get('/make-server-0614540f/get-student-manager', async (c) => {
     }
 
     const studentId = c.req.query('studentId');
-    if (!studentId) {
-      return c.json({ error: 'Student ID is required' }, 400);
-    }
-
     const manager = await kv.get(`manager:${studentId}`);
     
     return c.json({ 
@@ -1595,10 +1568,6 @@ app.get('/make-server-0614540f/get-student-manager', async (c) => {
 app.post('/make-server-0614540f/add-manager', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    if (!accessToken) {
-      return c.json({ error: 'Authorization token required' }, 401);
-    }
-
     const { data: { user }, error } = await supabase.auth.getUser(accessToken);
     
     if (!user || error) {
@@ -1606,20 +1575,12 @@ app.post('/make-server-0614540f/add-manager', async (c) => {
     }
 
     const userData = await kv.get(`user:${user.id}`);
-    if (!userData) {
-      return c.json({ error: 'User data not found' }, 404);
-    }
-
     if (userData.role !== 'admin') {
       return c.json({ error: 'Admin access required' }, 403);
     }
 
     const body = await c.req.json();
     const { name, designation, phone, email } = body;
-
-    if (!name || !designation || !phone || !email) {
-      return c.json({ error: 'All fields are required' }, 400);
-    }
 
     const managerId = `manager-record:${Date.now()}`;
     const manager = {
@@ -1642,10 +1603,6 @@ app.post('/make-server-0614540f/add-manager', async (c) => {
 app.get('/make-server-0614540f/all-managers', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    if (!accessToken) {
-      return c.json({ error: 'Authorization token required' }, 401);
-    }
-
     const { data: { user }, error } = await supabase.auth.getUser(accessToken);
     
     if (!user || error) {
@@ -1653,10 +1610,6 @@ app.get('/make-server-0614540f/all-managers', async (c) => {
     }
 
     const userData = await kv.get(`user:${user.id}`);
-    if (!userData) {
-      return c.json({ error: 'User data not found' }, 404);
-    }
-
     if (userData.role !== 'admin') {
       return c.json({ error: 'Admin access required' }, 403);
     }
@@ -1676,10 +1629,6 @@ app.get('/make-server-0614540f/all-managers', async (c) => {
 app.delete('/make-server-0614540f/delete-manager', async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    if (!accessToken) {
-      return c.json({ error: 'Authorization token required' }, 401);
-    }
-
     const { data: { user }, error } = await supabase.auth.getUser(accessToken);
     
     if (!user || error) {
@@ -1687,26 +1636,12 @@ app.delete('/make-server-0614540f/delete-manager', async (c) => {
     }
 
     const userData = await kv.get(`user:${user.id}`);
-    if (!userData) {
-      return c.json({ error: 'User data not found' }, 404);
-    }
-
     if (userData.role !== 'admin') {
       return c.json({ error: 'Admin access required' }, 403);
     }
 
     const body = await c.req.json();
     const { managerId } = body;
-
-    if (!managerId) {
-      return c.json({ error: 'Manager ID is required' }, 400);
-    }
-
-    // Verify manager exists before deleting
-    const manager = await kv.get(managerId);
-    if (!manager) {
-      return c.json({ error: 'Manager not found' }, 404);
-    }
 
     await kv.delete(managerId);
     return c.json({ success: true, message: 'Manager deleted successfully' });
