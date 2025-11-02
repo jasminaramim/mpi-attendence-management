@@ -43,16 +43,23 @@ export function ManageAttendanceTab({ attendance, students, accessToken, onRefre
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/admin-add-attendance`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/add-attendance`,
         {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ studentId, date, checkIn, checkOut, status }),
+          body: JSON.stringify({ studentId, date, checkIn, checkOut, status, name: students.find(s => s.studentId === studentId)?.name || 'Unknown' }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to add attendance (${response.status})`);
+        return;
+      }
 
       const data = await response.json();
       closeLoading();
@@ -67,7 +74,7 @@ export function ManageAttendanceTab({ attendance, students, accessToken, onRefre
     } catch (error) {
       closeLoading();
       console.error('Add attendance error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };
@@ -84,7 +91,7 @@ export function ManageAttendanceTab({ attendance, students, accessToken, onRefre
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/admin-update-attendance`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/update-attendance`,
         {
           method: 'POST',
           headers: {
@@ -92,13 +99,23 @@ export function ManageAttendanceTab({ attendance, students, accessToken, onRefre
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            recordId: selectedRecord.id,
-            checkIn,
-            checkOut,
-            status,
+            studentId: selectedRecord.studentId,
+            date: selectedRecord.date,
+            updates: {
+              checkIn,
+              checkOut,
+              status,
+            },
           }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to update attendance (${response.status})`);
+        return;
+      }
 
       const data = await response.json();
       closeLoading();
@@ -113,12 +130,12 @@ export function ManageAttendanceTab({ attendance, students, accessToken, onRefre
     } catch (error) {
       closeLoading();
       console.error('Update attendance error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
     setLoading(false);
   };
 
-  const handleDeleteAttendance = async (recordId: string) => {
+  const handleDeleteAttendance = async (record: any) => {
     const confirmed = await showConfirm(
       'This will permanently delete this attendance record.',
       'Delete Attendance?'
@@ -129,16 +146,23 @@ export function ManageAttendanceTab({ attendance, students, accessToken, onRefre
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/admin-delete-attendance`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/delete-attendance`,
         {
-          method: 'POST',
+          method: 'DELETE',
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ recordId }),
+          body: JSON.stringify({ studentId: record.studentId, date: record.date }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to delete attendance (${response.status})`);
+        return;
+      }
 
       const data = await response.json();
       closeLoading();
@@ -152,7 +176,7 @@ export function ManageAttendanceTab({ attendance, students, accessToken, onRefre
     } catch (error) {
       closeLoading();
       console.error('Delete attendance error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
   };
 
@@ -315,7 +339,7 @@ export function ManageAttendanceTab({ attendance, students, accessToken, onRefre
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleDeleteAttendance(record.id)}
+                        onClick={() => handleDeleteAttendance(record)}
                       >
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>

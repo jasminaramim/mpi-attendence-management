@@ -17,7 +17,7 @@ export function ManageLeavesTab({ leaves, accessToken, onRefresh }: ManageLeaves
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/admin-approve-leave`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/update-leave-status`,
         {
           method: 'POST',
           headers: {
@@ -27,6 +27,13 @@ export function ManageLeavesTab({ leaves, accessToken, onRefresh }: ManageLeaves
           body: JSON.stringify({ leaveId, status: 'Approved' }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to approve leave (${response.status})`);
+        return;
+      }
 
       const data = await response.json();
       closeLoading();
@@ -40,7 +47,7 @@ export function ManageLeavesTab({ leaves, accessToken, onRefresh }: ManageLeaves
     } catch (error) {
       closeLoading();
       console.error('Approve leave error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
   };
 
@@ -49,7 +56,7 @@ export function ManageLeavesTab({ leaves, accessToken, onRefresh }: ManageLeaves
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/admin-approve-leave`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-0614540f/update-leave-status`,
         {
           method: 'POST',
           headers: {
@@ -59,6 +66,13 @@ export function ManageLeavesTab({ leaves, accessToken, onRefresh }: ManageLeaves
           body: JSON.stringify({ leaveId, status: 'Rejected' }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to reject leave (${response.status})`);
+        return;
+      }
 
       const data = await response.json();
       closeLoading();
@@ -72,7 +86,7 @@ export function ManageLeavesTab({ leaves, accessToken, onRefresh }: ManageLeaves
     } catch (error) {
       closeLoading();
       console.error('Reject leave error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
   };
 

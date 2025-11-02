@@ -162,12 +162,20 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        console.error('Fetch notices HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setNotices(data.notices);
+        setNotices(data.notices || []);
+      } else {
+        console.error('Fetch notices error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch notices error:', error);
+      console.error('Fetch notices network error:', error);
     }
   };
 
@@ -182,12 +190,20 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        console.error('Fetch complaints HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setComplaints(data.complaints);
+        setComplaints(data.complaints || []);
+      } else {
+        console.error('Fetch complaints error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch complaints error:', error);
+      console.error('Fetch complaints network error:', error);
     }
   };
 
@@ -202,12 +218,20 @@ export function AdminDashboard({ user, accessToken, onLogout, onUpdateUser }: Ad
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        console.error('Fetch teachers HTTP error:', errorData);
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
-        setTeachers(data.teachers);
+        setTeachers(data.teachers || []);
+      } else {
+        console.error('Fetch teachers error:', data.error);
       }
     } catch (error) {
-      console.error('Fetch teachers error:', error);
+      console.error('Fetch teachers network error:', error);
     }
   };
 

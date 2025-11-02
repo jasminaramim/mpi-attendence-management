@@ -35,6 +35,13 @@ export function ManageStudentsTab({ students, accessToken, onRefresh }: ManageSt
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to delete student (${response.status})`);
+        return;
+      }
+
       const data = await response.json();
       closeLoading();
 
@@ -47,7 +54,7 @@ export function ManageStudentsTab({ students, accessToken, onRefresh }: ManageSt
     } catch (error) {
       closeLoading();
       console.error('Delete student error:', error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
   };
 
@@ -75,6 +82,13 @@ export function ManageStudentsTab({ students, accessToken, onRefresh }: ManageSt
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        closeLoading();
+        showError(errorData.error || `Failed to ${action} student (${response.status})`);
+        return;
+      }
+
       const data = await response.json();
       closeLoading();
 
@@ -87,7 +101,7 @@ export function ManageStudentsTab({ students, accessToken, onRefresh }: ManageSt
     } catch (error) {
       closeLoading();
       console.error(`${action} student error:`, error);
-      showError('Network error. Please try again.');
+      showError('Network error. Please check your connection and try again.');
     }
   };
 
