@@ -65,7 +65,7 @@ export function StudentDashboard({ user, accessToken, onLogout, onUpdateUser }: 
 
       const data = await response.json();
       if (data.success) {
-        setAttendanceHistory(data.records || []);
+        setAttendanceHistory(data.attendance || data.records || []);
       } else {
         console.error('Fetch attendance error:', data.error);
       }

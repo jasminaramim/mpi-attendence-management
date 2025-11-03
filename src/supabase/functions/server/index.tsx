@@ -20,7 +20,20 @@ const getCurrentDateTime = () => {
   const bangladeshTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
   const date = bangladeshTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const time = bangladeshTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-  return { date, time, timestamp: bangladeshTime.getTime() };
+  return { date, time, timestamp: bangladeshTime.getTime(), dayOfWeek: bangladeshTime.getDay() };
+};
+
+// Helper function to check if a date is Friday (5) or Saturday (6)
+const isOffDay = (dayOfWeek: number) => {
+  return dayOfWeek === 5 || dayOfWeek === 6; // Friday = 5, Saturday = 6
+};
+
+// Helper function to check if a date string is Friday or Saturday
+const isDateOffDay = (dateStr: string) => {
+  // Parse date string like "15 Jan, 2024" to Date object
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
+  return isOffDay(date.getDay());
 };
 
 // Helper function to calculate duration
@@ -190,7 +203,12 @@ app.post('/make-server-0614540f/check-in', async (c) => {
     }
 
     const userData = await kv.get(`user:${user.id}`);
-    const { date, time } = getCurrentDateTime();
+    const { date, time, dayOfWeek } = getCurrentDateTime();
+    
+    // Check if it's Friday or Saturday (off day)
+    if (isOffDay(dayOfWeek)) {
+      return c.json({ error: 'Friday and Saturday are OFFDAY. No attendance required.' }, 400);
+    }
     
     const attendanceKey = `attendance:${userData.studentId}:${date}`;
     const existing = await kv.get(attendanceKey);
@@ -227,7 +245,12 @@ app.post('/make-server-0614540f/check-out', async (c) => {
     }
 
     const userData = await kv.get(`user:${user.id}`);
-    const { date, time } = getCurrentDateTime();
+    const { date, time, dayOfWeek } = getCurrentDateTime();
+    
+    // Check if it's Friday or Saturday (off day)
+    if (isOffDay(dayOfWeek)) {
+      return c.json({ error: 'Friday and Saturday are OFFDAY. No attendance required.' }, 400);
+    }
     
     const attendanceKey = `attendance:${userData.studentId}:${date}`;
     const existing = await kv.get(attendanceKey);
@@ -267,14 +290,25 @@ app.get('/make-server-0614540f/my-attendance', async (c) => {
     const userData = await kv.get(`user:${user.id}`);
     const records = await kv.getByPrefix(`attendance:${userData.studentId}:`);
     
-    // Sort by date (most recent first)
-    const sorted = records.sort((a, b) => {
+    // Mark Friday and Saturday as OFFDAY automatically and add status
+    const formattedRecords = records.map((r: any) => {
+      if (isDateOffDay(r.date)) {
+        return {
+          ...r,
+          status: 'OFFDAY',
+        };
+      }
+      return {
+        ...r,
+        status: r.status || (r.checkIn && r.checkOut ? 'Present' : r.checkIn ? 'Present' : 'Absent'),
+      };
+    }).sort((a: any, b: any) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
       return dateB - dateA;
     });
 
-    return c.json({ success: true, records: sorted });
+    return c.json({ success: true, attendance: formattedRecords });
   } catch (err) {
     console.log(`Get attendance error: ${err}`);
     return c.json({ error: 'Server error fetching attendance' }, 500);

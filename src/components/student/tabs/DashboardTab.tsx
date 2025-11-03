@@ -106,11 +106,12 @@ export function DashboardTab({ user, accessToken, attendanceHistory, leaveBalanc
     setLoading(false);
   };
 
-  // Calculate stats
-  const totalDays = attendanceHistory.length;
-  const presentDays = attendanceHistory.filter((r) => r.status === 'Present').length;
-  const leaveDays = attendanceHistory.filter((r) => r.status === 'Leave').length;
-  const absentDays = attendanceHistory.filter((r) => r.status === 'Absent').length;
+  // Calculate stats - exclude off days
+  const workingDays = attendanceHistory.filter((r) => r.status !== 'OFFDAY');
+  const totalDays = workingDays.length;
+  const presentDays = workingDays.filter((r) => r.status === 'Present').length;
+  const leaveDays = workingDays.filter((r) => r.status === 'Leave').length;
+  const absentDays = workingDays.filter((r) => r.status === 'Absent').length;
   const attendancePercentage = totalDays > 0 ? ((presentDays / totalDays) * 100).toFixed(1) : 0;
 
   return (
@@ -187,20 +188,39 @@ export function DashboardTab({ user, accessToken, attendanceHistory, leaveBalanc
                   <p className="text-2xl text-[#27BEEF]">{todayRecord?.checkIn || '--:--'}</p>
                 </div>
                 <div className="flex gap-3">
-                  <Button
-                    onClick={handleCheckIn}
-                    disabled={loading || !!todayRecord?.checkIn}
-                    className="bg-[#27BEEF] hover:bg-[#27BEEF]/90"
-                  >
-                    Check In
-                  </Button>
-                  <Button
-                    onClick={handleCheckOut}
-                    disabled={loading || !todayRecord?.checkIn || !!todayRecord?.checkOut}
-                    className="bg-[#F4A247] hover:bg-[#F4A247]/90"
-                  >
-                    Check Out
-                  </Button>
+                  {(() => {
+                    const today = new Date();
+                    const dayOfWeek = today.getDay();
+                    const isOffDay = dayOfWeek === 5 || dayOfWeek === 6; // Friday = 5, Saturday = 6
+                    
+                    if (isOffDay) {
+                      return (
+                        <div className="text-center">
+                          <p className="text-gray-500 text-sm font-semibold">OFFDAY</p>
+                          <p className="text-gray-400 text-xs mt-1">Friday/Saturday - No attendance required</p>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <>
+                        <Button
+                          onClick={handleCheckIn}
+                          disabled={loading || !!todayRecord?.checkIn}
+                          className="bg-[#27BEEF] hover:bg-[#27BEEF]/90"
+                        >
+                          Check In
+                        </Button>
+                        <Button
+                          onClick={handleCheckOut}
+                          disabled={loading || !todayRecord?.checkIn || !!todayRecord?.checkOut}
+                          className="bg-[#F4A247] hover:bg-[#F4A247]/90"
+                        >
+                          Check Out
+                        </Button>
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-500 mb-2">Check-Out Time</p>

@@ -18,6 +18,8 @@ export function AttendanceTab({ attendanceHistory, calendarView = false }: Atten
         return 'bg-yellow-500';
       case 'Leave':
         return 'bg-blue-500';
+      case 'OFFDAY':
+        return 'bg-gray-400';
       default:
         return 'bg-gray-500';
     }

@@ -37,6 +37,14 @@ export function AttendanceCalendar({ attendanceHistory, onDateClick, isAdmin = f
       month: 'short',
       year: 'numeric',
     });
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    
+    // Check if it's Friday (5) or Saturday (6) - off days
+    if (dayOfWeek === 5 || dayOfWeek === 6) {
+      return { date: dateStr, status: 'OFFDAY' };
+    }
+    
     return attendanceHistory.find((record) => record.date === dateStr);
   };
 
@@ -50,6 +58,8 @@ export function AttendanceCalendar({ attendanceHistory, onDateClick, isAdmin = f
         return 'bg-yellow-500 text-white';
       case 'Leave':
         return 'bg-blue-500 text-white';
+      case 'OFFDAY':
+        return 'bg-gray-500 text-white';
       default:
         return 'bg-gray-100 text-gray-400';
     }
@@ -99,13 +109,14 @@ export function AttendanceCalendar({ attendanceHistory, onDateClick, isAdmin = f
           {/* Calendar days */}
           {Array.from({ length: daysInMonth }).map((_, index) => {
             const day = index + 1;
+            const date = new Date(year, month, day);
+            const dayOfWeek = date.getDay();
+            const isFridayOrSaturday = dayOfWeek === 5 || dayOfWeek === 6; // Friday = 5, Saturday = 6
             const attendance = getAttendanceForDate(day);
             const isToday =
               day === getBangladeshTime().getDate() &&
               month === getBangladeshTime().getMonth() &&
               year === getBangladeshTime().getFullYear();
-            const dayOfWeek = new Date(year, month, day).getDay();
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
             const dateStr = new Date(year, month, day).toLocaleDateString('en-GB', {
               day: '2-digit',
@@ -113,19 +124,24 @@ export function AttendanceCalendar({ attendanceHistory, onDateClick, isAdmin = f
               year: 'numeric',
             });
 
+            // For Friday and Saturday, always show OFFDAY status
+            const displayStatus = isFridayOrSaturday ? 'OFFDAY' : (attendance?.status || '');
+
             return (
               <div
                 key={day}
                 className={`aspect-square p-2 border rounded-lg text-center transition-all hover:shadow-md ${
                   isAdmin ? 'cursor-pointer hover:ring-2 hover:ring-[#27BEEF]' : 'cursor-default'
                 } ${
-                  attendance ? getStatusColor(attendance.status) : isWeekend ? 'bg-gray-100' : 'bg-white'
+                  isFridayOrSaturday ? getStatusColor('OFFDAY') : (attendance ? getStatusColor(attendance.status) : 'bg-white')
                 } ${isToday ? 'ring-2 ring-[#F4A247]' : ''}`}
-                title={attendance ? `${attendance.status} - ${attendance.checkIn || 'N/A'}` : ''}
+                title={isFridayOrSaturday ? 'OFFDAY' : (attendance ? `${attendance.status} - ${attendance.checkIn || 'N/A'}` : '')}
                 onClick={() => isAdmin && onDateClick?.(dateStr, attendance)}
               >
-                <div className="text-sm">{day}</div>
-                {attendance && (
+                <div className={`text-sm ${isFridayOrSaturday ? 'font-bold' : ''}`}>{day}</div>
+                {isFridayOrSaturday ? (
+                  <div className="text-[11px] mt-0.5 font-bold uppercase tracking-wide leading-tight">OFFDAY</div>
+                ) : attendance && (
                   <div className="text-xs mt-1">{attendance.status.slice(0, 3)}</div>
                 )}
               </div>
@@ -152,8 +168,8 @@ export function AttendanceCalendar({ attendanceHistory, onDateClick, isAdmin = f
             <span className="text-xs">Leave</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-gray-100 border" />
-            <span className="text-xs">Offday</span>
+            <div className="w-4 h-4 rounded bg-gray-500" />
+            <span className="text-xs">OFFDAY</span>
           </div>
         </div>
       </CardContent>
